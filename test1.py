@@ -8,6 +8,7 @@ import threading
 import ipaddress
 import whois
 from PIL import Image, ImageTk
+import pygame
 
 # Function to validate an IP address
 def is_valid_ip(ip):
