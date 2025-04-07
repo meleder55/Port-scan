@@ -6,6 +6,8 @@ import json
 import csv
 import threading
 import ipaddress
+import whois
+from PIL import Image, ImageTk
 
 # Function to validate an IP address
 def is_valid_ip(ip):
@@ -173,41 +175,84 @@ def scan_and_display_results(mode, start_ip, end_ip, start_port, end_port, save_
     for result in all_results:
         save_results(result["ip"], result["open_ports"], result["closed_ports"], save_option)
 
+# Function to perform a WHOIS lookup
+def perform_whois(ip):
+    try:
+        w = whois.whois(ip)
+        return str(w)
+    except Exception as e:
+        return f"Error performing WHOIS lookup: {e}"
+
+# Function to run WHOIS lookup and display results
+def run_whois():
+    ip = ip_entry.get().strip()
+    if not is_valid_ip(ip):
+        messagebox.showerror("Error", "Invalid IP address.")
+        return
+
+    # Perform WHOIS lookup in a separate thread
+    threading.Thread(target=whois_and_display_results, args=(ip,)).start()
+
+def whois_and_display_results(ip):
+    result = perform_whois(ip)
+    result_text.delete(1.0, tk.END)  # Clear previous results
+    result_text.insert(tk.END, f"WHOIS Results for IP: {ip}\n")
+    result_text.insert(tk.END, result)
+
+# Load and display the image at the top of the GUI
+def add_image_to_gui():
+    try:
+        # Load the image using Pillow
+        image = Image.open("hacker_cat.jpg")
+        image = image.resize((300, 200))  # Resize the image to fit the GUI
+        photo = ImageTk.PhotoImage(image)
+
+        # Create a label to display the image
+        image_label = tk.Label(app, image=photo)
+        image_label.image = photo  # Keep a reference to avoid garbage collection
+        image_label.grid(row=0, column=0, columnspan=2, pady=10)
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load image: {e}")
+
 # Create the GUI
 app = tk.Tk()
 app.title("Port Scanner with Save Options")
 
+# Add the image to the GUI
+add_image_to_gui()
+
 mode_var = tk.StringVar(value="Single IP")
 save_option_var = tk.StringVar(value="TXT")  # Default save option is TXT
 
-tk.Label(app, text="Mode:").grid(row=0, column=0, padx=10, pady=10)
-tk.OptionMenu(app, mode_var, "Single IP", "IP Range").grid(row=0, column=1, padx=10, pady=10)
+tk.Label(app, text="Mode:").grid(row=1, column=0, padx=10, pady=10)
+tk.OptionMenu(app, mode_var, "Single IP", "IP Range").grid(row=1, column=1, padx=10, pady=10)
 
-tk.Label(app, text="IP Address / Start IP:").grid(row=1, column=0, padx=10, pady=10)
+tk.Label(app, text="IP Address / Start IP:").grid(row=2, column=0, padx=10, pady=10)
 ip_entry = tk.Entry(app)
-ip_entry.grid(row=1, column=1, padx=10, pady=10)
+ip_entry.grid(row=2, column=1, padx=10, pady=10)
 
-tk.Label(app, text="End IP (for Range):").grid(row=2, column=0, padx=10, pady=10)
+tk.Label(app, text="End IP (for Range):").grid(row=3, column=0, padx=10, pady=10)
 end_ip_entry = tk.Entry(app)
-end_ip_entry.grid(row=2, column=1, padx=10, pady=10)
+end_ip_entry.grid(row=3, column=1, padx=10, pady=10)
 
-tk.Label(app, text="Start Port:").grid(row=3, column=0, padx=10, pady=10)
+tk.Label(app, text="Start Port:").grid(row=4, column=0, padx=10, pady=10)
 start_port_entry = tk.Entry(app)
-start_port_entry.grid(row=3, column=1, padx=10, pady=10)
+start_port_entry.grid(row=4, column=1, padx=10, pady=10)
 
-tk.Label(app, text="End Port:").grid(row=4, column=0, padx=10, pady=10)
+tk.Label(app, text="End Port:").grid(row=5, column=0, padx=10, pady=10)
 end_port_entry = tk.Entry(app)
-end_port_entry.grid(row=4, column=1, padx=10, pady=10)
+end_port_entry.grid(row=5, column=1, padx=10, pady=10)
 
-tk.Label(app, text="Save As:").grid(row=5, column=0, padx=10, pady=10)
-tk.OptionMenu(app, save_option_var, "TXT", "JSON", "CSV").grid(row=5, column=1, padx=10, pady=10)
+tk.Label(app, text="Save As:").grid(row=6, column=0, padx=10, pady=10)
+tk.OptionMenu(app, save_option_var, "TXT", "JSON", "CSV").grid(row=6, column=1, padx=10, pady=10)
 
-tk.Button(app, text="Scan Ports", command=run_scan).grid(row=6, column=0, columnspan=2, pady=10)
+tk.Button(app, text="Scan Ports", command=run_scan).grid(row=7, column=0, columnspan=2, pady=10)
+tk.Button(app, text="WHOIS Lookup", command=run_whois).grid(row=8, column=0, columnspan=2, pady=10)
 
 progress_bar = ttk.Progressbar(app, orient="horizontal", length=300, mode="determinate")
-progress_bar.grid(row=7, column=0, columnspan=2, pady=10)
+progress_bar.grid(row=9, column=0, columnspan=2, pady=10)
 
 result_text = scrolledtext.ScrolledText(app, width=60, height=15)
-result_text.grid(row=8, column=0, columnspan=2, padx=10, pady=10)
+result_text.grid(row=10, column=0, columnspan=2, padx=10, pady=10)
 
 app.mainloop()
